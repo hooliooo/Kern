@@ -34,12 +34,12 @@ pub fn generate_entity(ast: DeriveInput) -> TokenStream {
     let id_field = id_field.expect("Missing `id` field");
     let id_field_type = id_field.ty;
 
-    let getters = generate_fields(&identity, filtered_fields);
+    let getters = generate_fields(&identity, &generics, filtered_fields);
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     quote::quote!(
 
-        impl #impl_generics kern::building_blocks::entity::Entity #ty_generics for #identity #where_clause {
+        impl #impl_generics kern::building_blocks::entity::Entity for #identity #ty_generics #where_clause {
             type Id = #id_field_type;
 
             fn id(&self) -> &Self::Id {
@@ -47,15 +47,15 @@ pub fn generate_entity(ast: DeriveInput) -> TokenStream {
             }
         }
 
-        impl PartialEq for #identity {
+        impl #impl_generics PartialEq for #identity #ty_generics #where_clause {
             fn eq(&self, other: &Self) -> bool {
                 self.id() == other.id()
             }
         }
 
-        impl Eq for #identity {}
+        impl #impl_generics Eq for #identity #ty_generics #where_clause {}
 
-        impl std::hash::Hash for #identity {
+        impl #impl_generics std::hash::Hash for #identity #ty_generics #where_clause {
             fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
                 self.id.hash(state);
             }

@@ -39,7 +39,7 @@ pub fn generate_value_object_for_struct(
         },
     );
 
-    let getters = generate_fields(identity, filtered_fields);
+    let getters = generate_fields(identity, generics, filtered_fields);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     quote::quote!(
         impl #impl_generics kern::building_blocks::value_object::ValueObject #ty_generics for #identity #where_clause {}

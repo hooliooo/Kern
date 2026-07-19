@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, TokenStream};
-use syn::Field;
+use syn::{Field, Generics};
 use crate::FIELD_ATTR;
 
-pub fn generate_fields(identity: &Ident, fields: Vec<Field>) -> TokenStream {
+pub fn generate_fields(identity: &Ident, generics: &Generics, fields: Vec<Field>) -> TokenStream {
 
     let getters = fields
         .into_iter()
@@ -22,8 +22,9 @@ pub fn generate_fields(identity: &Ident, fields: Vec<Field>) -> TokenStream {
             )
         });
 
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     quote::quote!(
-        impl #identity {
+        impl #impl_generics #identity #ty_generics #where_clause {
             #(#getters)*
         }
     )

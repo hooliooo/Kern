@@ -71,7 +71,7 @@ pub fn generate_aggregate(ast: DeriveInput) -> TokenStream {
     quote::quote!(
         #generated_id_quote
 
-        impl #impl_generics kern::building_blocks::aggregate::Aggregate #ty_generics for #identity #where_clause {
+        impl #impl_generics kern::building_blocks::aggregate::Aggregate for #identity #ty_generics #where_clause {
 
             fn version(&self) -> u32 {
                 self.version
