@@ -1,7 +1,98 @@
 use proc_macro::TokenStream;
 use syn::{Data, DeriveInput};
 
+/// Generates a `Serialize` impl for the event, or nothing when this crate's `serde` feature
+/// (enabled by `kern/serde`) is off.
+///
+/// Supports structs and enums with named fields, and resolves serde through the `kern::serde`
+/// re-export so downstream crates do not declare it themselves.
+fn generate_serialize(ast: &DeriveInput) -> proc_macro2::TokenStream {
+    if !cfg!(feature = "serde") {
+        return quote::quote!();
+    }
+
+    let identity = &ast.ident;
+    let identity_name = identity.to_string();
+
+    // Every type parameter has to carry a `Serialize` bound of its own, since the fields
+    // holding it are what gets serialized.
+    let mut generics = ast.generics.clone();
+    for param in &mut generics.params {
+        if let syn::GenericParam::Type(type_param) = param {
+            type_param.bounds.push(syn::parse_quote!(kern::serde::Serialize));
+        }
+    }
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let named_fields = |fields: &syn::Fields| -> Vec<syn::Ident> {
+        fields
+            .iter()
+            .map(|field| {
+                field
+                    .ident
+                    .clone()
+                    .expect("DomainEvent only supports named fields")
+            })
+            .collect()
+    };
+
+    let body = match &ast.data {
+        Data::Struct(data) => {
+            let fields = named_fields(&data.fields);
+            let names = fields.iter().map(|field| field.to_string());
+            let count = fields.len();
+            quote::quote!(
+                use kern::serde::ser::SerializeStruct;
+                let mut state = serializer.serialize_struct(#identity_name, #count)?;
+                #( state.serialize_field(#names, &self.#fields)?; )*
+                state.end()
+            )
+        }
+        Data::Enum(data) => {
+            let arms = data.variants.iter().enumerate().map(|(index, variant)| {
+                let variant_identity = &variant.ident;
+                let variant_name = variant_identity.to_string();
+                let fields = named_fields(&variant.fields);
+                let names = fields.iter().map(|field| field.to_string());
+                let count = fields.len();
+                let index = index as u32;
+                quote::quote!(
+                    #identity::#variant_identity { #( #fields, )* } => {
+                        use kern::serde::ser::SerializeStructVariant;
+                        let mut state = serializer.serialize_struct_variant(
+                            #identity_name,
+                            #index,
+                            #variant_name,
+                            #count,
+                        )?;
+                        #( state.serialize_field(#names, #fields)?; )*
+                        state.end()
+                    }
+                )
+            });
+            quote::quote!(
+                match self {
+                    #( #arms )*
+                }
+            )
+        }
+        _ => unreachable!(),
+    };
+
+    quote::quote!(
+        impl #impl_generics kern::serde::Serialize for #identity #ty_generics #where_clause {
+            fn serialize<__S>(&self, serializer: __S) -> ::core::result::Result<__S::Ok, __S::Error>
+            where
+                __S: kern::serde::Serializer,
+            {
+                #body
+            }
+        }
+    )
+}
+
 pub fn generate_domain_event(ast: DeriveInput) -> TokenStream {
+    let serialize_quote = generate_serialize(&ast);
     let identity = ast.ident;
     let generics = ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -70,5 +161,7 @@ pub fn generate_domain_event(ast: DeriveInput) -> TokenStream {
                 self
             }
         }
+
+        #serialize_quote
     ).into()
 }

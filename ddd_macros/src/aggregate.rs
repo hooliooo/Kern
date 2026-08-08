@@ -34,6 +34,25 @@ pub fn generate_aggregate(ast: DeriveInput) -> TokenStream {
             let id_type = attribute.parse_args::<Type>().unwrap();
             let id_identity_name = identity.to_string() + "Id";
             let id_identity = Ident::new(id_identity_name.as_str(), Span::call_site());
+
+            let serialize_quote = if cfg!(feature = "serde") {
+                quote::quote!(
+                    impl kern::serde::Serialize for #id_identity {
+                        fn serialize<S>(
+                            &self,
+                            serializer: S,
+                        ) -> ::core::result::Result<S::Ok, S::Error>
+                        where
+                            S: kern::serde::Serializer,
+                        {
+                            kern::serde::Serialize::serialize(&self.0, serializer)
+                        }
+                    }
+                )
+            } else {
+                quote::quote!()
+            };
+
             quote::quote!(
                 // Generate the ID struct of the struct
                 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -60,6 +79,8 @@ pub fn generate_aggregate(ast: DeriveInput) -> TokenStream {
                 }
 
                 impl kern::building_blocks::ids::AggregateId for #id_identity {}
+
+                #serialize_quote
             )
         }
         None => quote::quote!(),

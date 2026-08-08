@@ -7,6 +7,7 @@ pub trait AggregateId: Copy + Clone + Eq + PartialEq + Hash {}
 
 /// The unique identifier of the Event
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct EventId(Uuid);
 
 impl EventId {
@@ -31,6 +32,7 @@ impl EventId {
 impl ValueObject for EventId {}
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct UserId<T>(T);
 
 impl<T> UserId<T> {
@@ -50,4 +52,4 @@ impl<T> From<T> for UserId<T> {
 }
 
 impl<T> AggregateId for UserId<T> where T: Copy + Clone + Eq + PartialEq + Hash {}
-impl<T> ValueObject for UserId<T> where T: Clone + Eq + PartialEq + Hash {}
+impl<T> ValueObject for UserId<T> where T: Copy + Clone + Eq + PartialEq + Hash {}

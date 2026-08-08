@@ -5,23 +5,14 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 /// use kern::building_blocks::domain_event::DomainEvent;
 /// use kern::building_blocks::ids::AggregateId;
 /// use kern::building_blocks::ids::EventId;
+/// use kern::building_blocks::ids::UserId;
 /// use chrono::DateTime;
 /// use chrono::Utc;
 /// use uuid::Uuid;
 /// use std::any::Any;
 ///
 ///
-/// #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
-/// pub struct AccountId {
-///     pub id: Uuid,
-/// }
-///
-/// impl AccountId {
-///     pub fn new() -> Self {
-///         Self { id: Uuid::new_v4() }
-///     }
-/// }
-/// impl AggregateId for AccountId {}
+/// type AccountId = UserId<Uuid>;
 ///
 /// #[derive(kern::DomainEvent, Debug)]
 /// pub struct CreatedAccount {
@@ -35,7 +26,7 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 ///     pub fn new(aggregate_id: uuid::Uuid) -> Self {
 ///         Self {
 ///             id: EventId::new_random_v4(),
-///             aggregate_id: AccountId { id: aggregate_id },
+///             aggregate_id: AccountId::new(aggregate_id),
 ///             aggregate_version: 0,
 ///             occurred_at: Utc::now()
 ///         }
@@ -58,8 +49,8 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 ///     Updated { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_at: DateTime<Utc> },
 /// }
 ///
-/// let a = AccountEvent::Created { id: EventId::new_random_v4(), aggregate_id: AccountId::new(), aggregate_version: 0, occurred_at: Utc::now() };
-/// let b = AccountEvent::Updated { id: EventId::new_random_v4(), aggregate_id: AccountId::new(), aggregate_version: 0, occurred_at: Utc::now() };
+/// let a = AccountEvent::Created { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_at: Utc::now() };
+/// let b = AccountEvent::Updated { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_at: Utc::now() };
 /// let boxed_a = Box::new(a);
 /// let unboxed_a_as_any = boxed_a.as_any();
 /// assert!(unboxed_a_as_any.is::<AccountEvent>());

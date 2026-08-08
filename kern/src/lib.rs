@@ -4,6 +4,11 @@ pub mod infrastructure;
 
 pub use ddd_macros::*;
 
+/// Re-export of `serde`, so generated code and downstream crates can reach it without
+/// declaring serde themselves.
+#[cfg(feature = "serde")]
+pub use serde;
+
 #[cfg(feature = "validator")]
 pub mod validator_extensions {
     use std::collections::HashSet;

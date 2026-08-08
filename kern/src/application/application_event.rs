@@ -1,7 +1,5 @@
 use chrono::{DateTime, Utc};
 
-use serde::Serialize;
-
 use crate::{
     application::{
         environment::Environment,
@@ -10,10 +8,10 @@ use crate::{
     building_blocks::domain_event::DomainEvent,
 };
 
-#[derive(Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ApplicationEvent<T>
 where
-    T: DomainEvent + Serialize,
+    T: DomainEvent,
 {
     /// The unique identifier of the command that triggered the application. Used to track the event in logging
     command_id: String,
@@ -31,7 +29,7 @@ where
 
 impl<T> ApplicationEvent<T>
 where
-    T: DomainEvent + Serialize,
+    T: DomainEvent,
 {
     pub fn new(
         command_id: CommandId,

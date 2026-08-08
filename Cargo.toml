@@ -7,20 +7,20 @@ resolver = "3"
 
 [workspace.dependencies]
 # ddd dependencies
-async-trait = { version = "0.1.89" }
-axum = { version = "0.8.8", features = ["json"] }
-chrono = { version = "0.4.44" }
-dashmap = { version = "6.1.0" }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = { version = "1.0.149" }
-utoipa = { version = "5.4.0", features = ["macros"] }
-uuid = { version = "1.17.0", features = ["v4", "v7"] }
-validator = { version = "0.20.0", features = ["derive"] }
+async-trait = { version = "0.1.92" }
+axum = { version = "0.8.9", features = ["json"] }
+chrono = { version = "0.4.45" }
+dashmap = { version = "6.2.1" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.151" }
+utoipa = { version = "5.5.0", features = ["macros"] }
+uuid = { version = "1.24.0", features = ["v4", "v7"] }
+validator = { version = "0.21.0", features = ["derive"] }
 
 # ddd dev-dependencies
-tokio = { version = "1.52.2", features = ["full", "sync"] }
+tokio = { version = "1.53.1", features = ["full", "sync"] }
 
 # ddd_macros dependencies
-proc-macro2 = "1.0.106"
-syn = "2.0.117"
-quote = "1.0.45"
+proc-macro2 = "1.0.107"
+syn = "3.0.3"
+quote = "1.0.47"
