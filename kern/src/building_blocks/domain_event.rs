@@ -19,7 +19,13 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 ///     id: EventId,
 ///     aggregate_id: AccountId,
 ///     aggregate_version: u32,
-///     occurred_at: DateTime<Utc>
+///     // `#[field]` generates an accessor; the fields above already have one from the trait.
+///     #[field]
+///     holder: String,
+///     // `copy` returns a value rather than a reference.
+///     #[field(copy)]
+///     active: bool,
+///     occurred_on: DateTime<Utc>
 /// }
 ///
 /// impl CreatedAccount {
@@ -28,13 +34,21 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 ///             id: EventId::new_random_v4(),
 ///             aggregate_id: AccountId::new(aggregate_id),
 ///             aggregate_version: 0,
-///             occurred_at: Utc::now()
+///             holder: "Ada".to_owned(),
+///             active: true,
+///             occurred_on: Utc::now()
 ///         }
 ///     }
 /// }
 ///
 /// let a = CreatedAccount::new(uuid::Uuid::new_v4());
 /// let b = CreatedAccount::new(uuid::Uuid::new_v4());
+///
+/// // Derived from the type name.
+/// assert_eq!(a.event_type(), "created-account");
+/// assert_eq!(a.holder(), "Ada");
+/// assert!(a.active());
+///
 /// let boxed_a = Box::new(a);
 /// let unboxed_a_as_any = boxed_a.as_any();
 /// assert!(unboxed_a_as_any.is::<CreatedAccount>());
@@ -45,12 +59,17 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 ///
 /// #[derive(kern::DomainEvent, Debug)]
 /// pub enum AccountEvent {
-///     Created { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_at: DateTime<Utc> },
-///     Updated { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_at: DateTime<Utc> },
+///     Created { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_on: DateTime<Utc> },
+///     Updated { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_on: DateTime<Utc> },
 /// }
 ///
-/// let a = AccountEvent::Created { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_at: Utc::now() };
-/// let b = AccountEvent::Updated { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_at: Utc::now() };
+/// let a = AccountEvent::Created { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_on: Utc::now() };
+/// let b = AccountEvent::Updated { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_on: Utc::now() };
+///
+/// // Named after the enum and the variant, with the trailing `Event` dropped.
+/// assert_eq!(a.event_type(), "account-created");
+/// assert_eq!(b.event_type(), "account-updated");
+///
 /// let boxed_a = Box::new(a);
 /// let unboxed_a_as_any = boxed_a.as_any();
 /// assert!(unboxed_a_as_any.is::<AccountEvent>());
@@ -86,7 +105,11 @@ pub trait DomainEvent {
     fn aggregate_version(&self) -> u32;
 
     /// The timestamp of when the domain event occurred
-    fn occurred_at(&self) -> &chrono::DateTime<chrono::Utc>;
+    fn occurred_on(&self) -> &chrono::DateTime<chrono::Utc>;
+
+    /// The kebab-case name of the event, derived from the type's name. `CreatedAccount` gives
+    /// `created-account`.
+    fn event_type(&self) -> &'static str;
 
     fn as_any(&self) -> &dyn std::any::Any;
 }
@@ -97,7 +120,8 @@ pub trait DynDomainEvent: Send + Sync {
     fn id(&self) -> &EventId;
     fn aggregate_id(&self) -> &dyn std::any::Any;
     fn aggregate_version(&self) -> u32;
-    fn occurred_at(&self) -> &chrono::DateTime<chrono::Utc>;
+    fn occurred_on(&self) -> &chrono::DateTime<chrono::Utc>;
+    fn event_type(&self) -> &'static str;
     fn as_any(&self) -> &dyn std::any::Any;
 }
 
@@ -117,8 +141,12 @@ where
         DomainEvent::aggregate_version(self)
     }
 
-    fn occurred_at(&self) -> &chrono::DateTime<chrono::Utc> {
-        DomainEvent::occurred_at(self)
+    fn occurred_on(&self) -> &chrono::DateTime<chrono::Utc> {
+        DomainEvent::occurred_on(self)
+    }
+
+    fn event_type(&self) -> &'static str {
+        DomainEvent::event_type(self)
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

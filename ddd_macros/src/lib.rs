@@ -51,7 +51,7 @@ pub fn value_object_macro(item: TokenStream) -> TokenStream {
 }
 
 /// Generates the boilerplate code for a DomainEvent
-#[proc_macro_derive(DomainEvent)]
+#[proc_macro_derive(DomainEvent, attributes(field))]
 pub fn domain_event_macro(item: TokenStream) -> TokenStream {
     // parse
     let ast: DeriveInput = syn::parse_macro_input!(item as DeriveInput);
@@ -96,6 +96,20 @@ fn to_snake_case(name: String) -> String {
         }
     }
     snake_case
+}
+
+/// `CreatedOrganization` becomes `created-organization`.
+fn to_kebab_case(name: String) -> String {
+    to_snake_case(name).replace('_', "-")
+}
+
+/// Drops a trailing `-event` or `-events`, so an `AccountEvent` enum contributes `account`
+/// rather than `account-event` to the names of its variants.
+fn strip_event_suffix(name: String) -> String {
+    name.strip_suffix("-events")
+        .or_else(|| name.strip_suffix("-event"))
+        .map(str::to_owned)
+        .unwrap_or(name)
 }
 
 const FIELD_ATTR: &str = "field";

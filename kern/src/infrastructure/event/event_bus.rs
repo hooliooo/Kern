@@ -111,7 +111,7 @@ mod test {
         id: EventId,
         aggregate_id: AccountId,
         aggregate_version: u32,
-        occurred_at: DateTime<Utc>,
+        occurred_on: DateTime<Utc>,
     }
 
     impl CreatedAccount {
@@ -120,7 +120,7 @@ mod test {
                 id: EventId::new_random_v4(),
                 aggregate_id: AccountId { id: aggregate_id },
                 aggregate_version: 0,
-                occurred_at: Utc::now(),
+                occurred_on: Utc::now(),
             }
         }
     }
@@ -136,11 +136,15 @@ mod test {
         fn aggregate_version(&self) -> u32 {
             self.aggregate_version
         }
-        fn occurred_at(&self) -> &DateTime<Utc> {
-            &self.occurred_at
+        fn occurred_on(&self) -> &DateTime<Utc> {
+            &self.occurred_on
         }
         fn as_any(&self) -> &dyn std::any::Any {
             self
+        }
+
+        fn event_type(&self) -> &'static str {
+            "created-account"
         }
     }
 

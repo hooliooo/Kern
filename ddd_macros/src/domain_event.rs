@@ -1,11 +1,10 @@
 use proc_macro::TokenStream;
 use syn::{Data, DeriveInput};
 
+use crate::{FIELD_ATTR, generate_fields::generate_fields};
+
 /// Generates a `Serialize` impl for the event, or nothing when this crate's `serde` feature
-/// (enabled by `kern/serde`) is off.
-///
-/// Supports structs and enums with named fields, and resolves serde through the `kern::serde`
-/// re-export so downstream crates do not declare it themselves.
+/// (enabled by `kern/serde`) is off. Resolves serde through the `kern::serde` re-export.
 fn generate_serialize(ast: &DeriveInput) -> proc_macro2::TokenStream {
     if !cfg!(feature = "serde") {
         return quote::quote!();
@@ -19,7 +18,9 @@ fn generate_serialize(ast: &DeriveInput) -> proc_macro2::TokenStream {
     let mut generics = ast.generics.clone();
     for param in &mut generics.params {
         if let syn::GenericParam::Type(type_param) = param {
-            type_param.bounds.push(syn::parse_quote!(kern::serde::Serialize));
+            type_param
+                .bounds
+                .push(syn::parse_quote!(kern::serde::Serialize));
         }
     }
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -117,21 +118,61 @@ pub fn generate_domain_event(ast: DeriveInput) -> TokenStream {
         _ => panic!("Only structs and enums are supported"),
     };
 
-    // 2. Generate the logic for each method
-    let (id_body, agg_id_body, agg_ver_body, occurred_body) = match &ast.data {
-        Data::Struct(_) => (
-            quote::quote!(&self.id),
-            quote::quote!(&self.aggregate_id),
-            quote::quote!(self.aggregate_version),
-            quote::quote!(&self.occurred_at),
+    // 2. Accessors for fields marked `#[field]`, as on `Aggregate` and `Entity`
+    let fields_quote = match &ast.data {
+        Data::Struct(data) => generate_fields(
+            &identity,
+            &generics,
+            data.fields.iter().cloned().collect::<Vec<syn::Field>>(),
         ),
+        Data::Enum(data) => {
+            let marked = data.variants.iter().any(|variant| {
+                variant
+                    .fields
+                    .iter()
+                    .any(|field| field.attrs.iter().any(|a| a.path().is_ident(FIELD_ATTR)))
+            });
+            if marked {
+                panic!("#[field] is not supported on enum variants");
+            }
+            quote::quote!()
+        }
+        _ => unreachable!(),
+    };
+
+    // 3. Generate the logic for each method. `event_type` is derived from the type name, or for
+    // an enum the type and variant names, with a trailing `Event`/`Events` dropped.
+    let (id_body, agg_id_body, agg_ver_body, occurred_body, event_type_body) = match &ast.data {
+        Data::Struct(_) => {
+            let event_type = super::strip_event_suffix(super::to_kebab_case(identity.to_string()));
+            (
+                quote::quote!(&self.id),
+                quote::quote!(&self.aggregate_id),
+                quote::quote!(self.aggregate_version),
+                quote::quote!(&self.occurred_on),
+                quote::quote!(#event_type),
+            )
+        }
         Data::Enum(data_enum) => {
             let variants: Vec<&syn::Ident> = data_enum.variants.iter().map(|v| &v.ident).collect();
+            let prefix = super::strip_event_suffix(super::to_kebab_case(identity.to_string()));
+            let event_types: Vec<String> = variants
+                .iter()
+                .map(|variant| {
+                    let variant = super::to_kebab_case(variant.to_string());
+                    if prefix.is_empty() {
+                        variant
+                    } else {
+                        format!("{}-{}", prefix, variant)
+                    }
+                })
+                .collect();
             (
                 quote::quote!(match self { #( #identity::#variants { id, .. } => id, )* }),
                 quote::quote!(match self { #( #identity::#variants { aggregate_id, .. } => aggregate_id, )* }),
                 quote::quote!(match self { #( #identity::#variants { aggregate_version, .. } => *aggregate_version, )* }),
-                quote::quote!(match self { #( #identity::#variants { occurred_at, .. } => occurred_at, )* }),
+                quote::quote!(match self { #( #identity::#variants { occurred_on, .. } => occurred_on, )* }),
+                quote::quote!(match self { #( #identity::#variants { .. } => #event_types, )* }),
             )
         }
         _ => unreachable!(),
@@ -153,14 +194,20 @@ pub fn generate_domain_event(ast: DeriveInput) -> TokenStream {
                 #agg_ver_body
             }
 
-            fn occurred_at(&self) -> &chrono::DateTime<chrono::Utc> {
+            fn occurred_on(&self) -> &chrono::DateTime<chrono::Utc> {
                 #occurred_body
+            }
+
+            fn event_type(&self) -> &'static str {
+                #event_type_body
             }
 
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }
         }
+
+        #fields_quote
 
         #serialize_quote
     ).into()
