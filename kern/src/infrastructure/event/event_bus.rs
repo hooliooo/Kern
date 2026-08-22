@@ -92,7 +92,7 @@ mod test {
         domain_event::{DomainEvent, DynDomainEvent},
         ids::{AggregateId, EventId},
     };
-    use chrono::{DateTime, Utc};
+    use crate::{Timestamp, TimestampExt};
     use std::sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -111,7 +111,7 @@ mod test {
         id: EventId,
         aggregate_id: AccountId,
         aggregate_version: u32,
-        occurred_on: DateTime<Utc>,
+        occurred_on: Timestamp,
     }
 
     impl CreatedAccount {
@@ -120,7 +120,7 @@ mod test {
                 id: EventId::new_random_v4(),
                 aggregate_id: AccountId { id: aggregate_id },
                 aggregate_version: 0,
-                occurred_on: Utc::now(),
+                occurred_on: Timestamp::now(),
             }
         }
     }
@@ -136,7 +136,7 @@ mod test {
         fn aggregate_version(&self) -> u32 {
             self.aggregate_version
         }
-        fn occurred_on(&self) -> &DateTime<Utc> {
+        fn occurred_on(&self) -> &Timestamp {
             &self.occurred_on
         }
         fn as_any(&self) -> &dyn std::any::Any {

@@ -4,6 +4,12 @@ pub mod infrastructure;
 
 pub use ddd_macros::*;
 
+#[cfg(all(feature = "chrono", feature = "time"))]
+compile_error!("The features 'chrono' and 'time' are mutually exclusive. Please choose only one.");
+
+#[cfg(not(any(feature = "chrono", feature = "time")))]
+compile_error!("You must enable either 'chrono' or 'time' feature.");
+
 /// Re-export of `serde`, so generated code and downstream crates can reach it without
 /// declaring serde themselves.
 #[cfg(feature = "serde")]
@@ -65,5 +71,39 @@ pub mod validator_extensions {
                 DomainError::multiple(errors)
             })
         }
+    }
+}
+
+pub trait TimestampExt {
+    fn now() -> Self;
+    fn to_iso8601(&self) -> String;
+}
+
+#[cfg(feature = "chrono")]
+pub type Timestamp = chrono::DateTime<chrono::Utc>;
+
+#[cfg(feature = "chrono")]
+impl TimestampExt for Timestamp {
+    fn now() -> Self {
+        chrono::Utc::now()
+    }
+
+    fn to_iso8601(&self) -> String {
+        self.to_rfc3339()
+    }
+}
+
+#[cfg(feature = "time")]
+pub type Timestamp = time::OffsetDateTime;
+
+#[cfg(feature = "time")]
+impl TimestampExt for Timestamp {
+    fn now() -> Self {
+        time::OffsetDateTime::now_utc()
+    }
+
+    fn to_iso8601(&self) -> String {
+        self.format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default()
     }
 }

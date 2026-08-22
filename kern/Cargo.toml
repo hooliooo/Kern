@@ -11,11 +11,12 @@ name = "kern"
 [dependencies]
 async-trait.workspace = true
 axum = { workspace = true, features = ["json"], optional = true }
-chrono = { workspace = true }
+chrono = { workspace = true, optional = true }
 dashmap = { workspace = true, optional = true }
 ddd_macros = { version = "0.1.0", path = "../ddd_macros" }
 serde = { workspace = true, features = ["derive"], optional = true }
 tokio = { workspace = true , features = ["sync"], optional = true }
+time = { workspace = true, features = ["formatting", "parsing"], optional = true }
 utoipa = { workspace = true, features = ["macros"] }
 uuid = { workspace = true, features = ["v4", "v7"] }
 validator = { workspace = true, features = ["derive"], optional = true }
@@ -24,9 +25,12 @@ validator = { workspace = true, features = ["derive"], optional = true }
 tokio.workspace = true
 
 [features]
-# Serialization for domain events, value objects and generated identity types.
-serde = ["dep:serde", "chrono/serde", "uuid/serde", "ddd_macros/serde"]
 axum = ["dep:axum", "serde"]
+chrono = ["dep:chrono"]
+chrono-serde = ["chrono", "serde", "chrono/serde"]
 event_bus = ["dep:dashmap", "dep:tokio"]
+serde = ["dep:serde", "uuid/serde", "ddd_macros/serde"]
+time = ["dep:time"]
+time-serde = ["time", "serde", "time/serde"]
 validator = ["dep:validator"]
 utoipa = []

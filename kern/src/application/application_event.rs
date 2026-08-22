@@ -1,6 +1,5 @@
-use chrono::{DateTime, Utc};
-
 use crate::{
+    Timestamp, TimestampExt,
     application::{
         environment::Environment,
         ids::{AuthorizedParty, CommandId},
@@ -22,7 +21,7 @@ where
     /// The environment of the application
     environment: String,
     /// The timestamp of when the application event was emitted
-    issued_at: DateTime<Utc>,
+    issued_at: Timestamp,
     /// The domain event
     domain_event: T,
 }
@@ -43,7 +42,7 @@ where
             command,
             authorized_party: authorized_party.value().to_string(),
             environment: environment.as_str().to_string(),
-            issued_at: Utc::now(),
+            issued_at: Timestamp::now(),
             domain_event,
         }
     }

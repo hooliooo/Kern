@@ -1,8 +1,9 @@
 use std::{collections::HashSet, hash::Hash};
 
-use chrono::{DateTime, Utc};
-
-use crate::application::{environment::Environment, role::Role};
+use crate::{
+    Timestamp,
+    application::{environment::Environment, role::Role},
+};
 
 ///
 /// A Request is a Command that mutates an Aggregate or a Query that returns data. The trait defines the required metadata in a
@@ -15,8 +16,8 @@ use crate::application::{environment::Environment, role::Role};
 /// use kern::application::request::AuthenticatedRequest;
 /// use kern::application::role::Role;
 /// use kern::building_blocks::ids::UserId;
-/// use chrono::DateTime;
-/// use chrono::Utc;
+/// use kern::Timestamp;
+/// use kern::TimestampExt;
 /// use std::collections::HashSet;
 /// use uuid::Uuid;
 ///
@@ -25,7 +26,7 @@ use crate::application::{environment::Environment, role::Role};
 ///     request_id: RequestId,
 ///     authorized_party: (),
 ///     environment: kern::application::environment::Environment,
-///     issued_at: DateTime<Utc>,
+///     issued_at: Timestamp,
 ///     user_id: UserId<Uuid>,
 ///     roles: HashSet<Role>
 /// }
@@ -36,7 +37,7 @@ use crate::application::{environment::Environment, role::Role};
 ///             request_id: RequestId::new(request_id),
 ///             authorized_party: (),
 ///             environment: kern::application::environment::Environment::Development,
-///             issued_at: Utc::now(),
+///             issued_at: Timestamp::now(),
 ///             user_id: UserId::new(uuid::Uuid::new_v4()),
 ///             roles: HashSet::default()
 ///         }
@@ -62,7 +63,7 @@ pub trait Request {
     fn environment(&self) -> &Environment;
 
     /// The timestamp of when the request was issued
-    fn issued_at(&self) -> &DateTime<Utc>;
+    fn issued_at(&self) -> &Timestamp;
 }
 
 pub trait AuthenticatedRequest: Request {

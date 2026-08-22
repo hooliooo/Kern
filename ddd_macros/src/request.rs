@@ -50,7 +50,7 @@ pub fn generate_request(ast: DeriveInput) -> TokenStream {
                 &self.authorized_party
             }
 
-            fn issued_at(&self) -> &chrono::DateTime<chrono::Utc> {
+            fn issued_at(&self) -> &kern::Timestamp {
                 &self.issued_at
             }
         }

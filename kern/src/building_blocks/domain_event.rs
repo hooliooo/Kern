@@ -1,4 +1,7 @@
-use crate::building_blocks::ids::{AggregateId, EventId};
+use crate::{
+    Timestamp,
+    building_blocks::ids::{AggregateId, EventId},
+};
 
 /// ```
 /// use kern::DomainEvent;
@@ -6,8 +9,8 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 /// use kern::building_blocks::ids::AggregateId;
 /// use kern::building_blocks::ids::EventId;
 /// use kern::building_blocks::ids::UserId;
-/// use chrono::DateTime;
-/// use chrono::Utc;
+/// use kern::Timestamp;
+/// use kern::TimestampExt;
 /// use uuid::Uuid;
 /// use std::any::Any;
 ///
@@ -25,7 +28,7 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 ///     // `copy` returns a value rather than a reference.
 ///     #[field(copy)]
 ///     active: bool,
-///     occurred_on: DateTime<Utc>
+///     occurred_on: Timestamp
 /// }
 ///
 /// impl CreatedAccount {
@@ -36,7 +39,7 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 ///             aggregate_version: 0,
 ///             holder: "Ada".to_owned(),
 ///             active: true,
-///             occurred_on: Utc::now()
+///             occurred_on: Timestamp::now()
 ///         }
 ///     }
 /// }
@@ -59,12 +62,12 @@ use crate::building_blocks::ids::{AggregateId, EventId};
 ///
 /// #[derive(kern::DomainEvent, Debug)]
 /// pub enum AccountEvent {
-///     Created { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_on: DateTime<Utc> },
-///     Updated { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_on: DateTime<Utc> },
+///     Created { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_on: Timestamp },
+///     Updated { id: EventId, aggregate_id: AccountId, aggregate_version: u32, occurred_on: Timestamp },
 /// }
 ///
-/// let a = AccountEvent::Created { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_on: Utc::now() };
-/// let b = AccountEvent::Updated { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_on: Utc::now() };
+/// let a = AccountEvent::Created { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_on: Timestamp::now() };
+/// let b = AccountEvent::Updated { id: EventId::new_random_v4(), aggregate_id: AccountId::new(Uuid::new_v4()), aggregate_version: 0, occurred_on: Timestamp::now() };
 ///
 /// // Named after the enum and the variant, with the trailing `Event` dropped.
 /// assert_eq!(a.event_type(), "account-created");
@@ -105,7 +108,7 @@ pub trait DomainEvent {
     fn aggregate_version(&self) -> u32;
 
     /// The timestamp of when the domain event occurred
-    fn occurred_on(&self) -> &chrono::DateTime<chrono::Utc>;
+    fn occurred_on(&self) -> &Timestamp;
 
     /// The kebab-case name of the event, derived from the type's name. `CreatedAccount` gives
     /// `created-account`.
@@ -120,7 +123,7 @@ pub trait DynDomainEvent: Send + Sync {
     fn id(&self) -> &EventId;
     fn aggregate_id(&self) -> &dyn std::any::Any;
     fn aggregate_version(&self) -> u32;
-    fn occurred_on(&self) -> &chrono::DateTime<chrono::Utc>;
+    fn occurred_on(&self) -> &Timestamp;
     fn event_type(&self) -> &'static str;
     fn as_any(&self) -> &dyn std::any::Any;
 }
@@ -141,7 +144,7 @@ where
         DomainEvent::aggregate_version(self)
     }
 
-    fn occurred_on(&self) -> &chrono::DateTime<chrono::Utc> {
+    fn occurred_on(&self) -> &Timestamp {
         DomainEvent::occurred_on(self)
     }
 

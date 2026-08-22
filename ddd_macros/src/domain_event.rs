@@ -194,7 +194,7 @@ pub fn generate_domain_event(ast: DeriveInput) -> TokenStream {
                 #agg_ver_body
             }
 
-            fn occurred_on(&self) -> &chrono::DateTime<chrono::Utc> {
+            fn occurred_on(&self) -> &kern::Timestamp {
                 #occurred_body
             }
 
